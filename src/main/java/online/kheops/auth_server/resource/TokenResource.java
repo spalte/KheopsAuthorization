@@ -9,9 +9,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlElement;
 
-import com.querydsl.jpa.impl.JPAQuery;
-import online.kheops.auth_server.entity.QUser;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -26,7 +23,6 @@ import online.kheops.auth_server.entity.User;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.Oid;
 
-import java.io.Console;
 import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
