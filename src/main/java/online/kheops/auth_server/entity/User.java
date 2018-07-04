@@ -1,11 +1,21 @@
 package online.kheops.auth_server.entity;
 
+import org.jooq.*;
+import org.jooq.impl.DSL;
+
+
 import javax.persistence.*;
+import javax.persistence.Query;
+import javax.persistence.Table;
+
 import java.math.BigInteger;
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Set;
+
+import static online.kheops.auth_server.generated.tables.Users.USERS;
 
 @SuppressWarnings("unused")
 @Entity
@@ -74,6 +84,21 @@ public class User {
             googleEmailQuery.setParameter("google_email", username);
             return ((BigInteger) googleEmailQuery.getSingleResult()).longValue();
         } catch (NoResultException ignored) {/*empty*/}
+
+        return -1;
+    }
+
+    // returns -1 if the user does not exist
+    public static long findPkByUsernameJOOQ(String username, Connection connection) {
+        DSLContext create = DSL.using(connection, SQLDialect.MYSQL);
+        try {
+            Result<Record1<Long>> result = create.select(USERS.PK).from(USERS).where(USERS.GOOGLE_ID.eq(username)).fetch();
+            return (Long)result.getValues(0).get(0);
+        } catch (Exception ignored) {/*empty*/}
+        try {
+            Result result = create.select(USERS.PK).from(USERS).where(USERS.GOOGLE_EMAIL.eq(username)).fetch();
+            return (Long)result.getValues(0).get(0);
+        } catch (Exception ignored) {/*empty*/}
 
         return -1;
     }
