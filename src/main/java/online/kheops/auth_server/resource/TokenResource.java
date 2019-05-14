@@ -5,6 +5,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
 import online.kheops.auth_server.annotation.FormURLEncodedContentType;
+import online.kheops.auth_server.annotation.TokenSecurity;
 import online.kheops.auth_server.annotation.ViewerTokenAccess;
 import online.kheops.auth_server.assertion.*;
 import online.kheops.auth_server.capability.ScopeType;
@@ -87,6 +88,7 @@ public class TokenResource
 
 
     @POST
+    @TokenSecurity
     @FormURLEncodedContentType
     @ViewerTokenAccess
     @Path("/token")
