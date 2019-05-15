@@ -1,7 +1,8 @@
 package online.kheops.auth_server.filter;
 
 import online.kheops.auth_server.annotation.TokenSecurity;
-import online.kheops.auth_server.util.TokenClientAuthentication;
+import online.kheops.auth_server.util.TokenAuthenticationException;
+import online.kheops.auth_server.util.TokenClientAuthenticationType;
 import online.kheops.auth_server.util.TokenErrorResponse;
 import online.kheops.auth_server.util.TokenPrincipal;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -18,13 +19,16 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.logging.Logger;
 
+import static java.util.logging.Level.INFO;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
 @TokenSecurity
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 public class TokenSecurityFilter implements ContainerRequestFilter {
+    private static final Logger LOG = Logger.getLogger(TokenSecurityFilter.class.getName());
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -45,15 +49,21 @@ public class TokenSecurityFilter implements ContainerRequestFilter {
             throw new IOException(e);
         }
 
-        TokenClientAuthentication authenticationType = TokenClientAuthentication.getTokenClientAuthentication(requestHeaders, form);
-        if (authenticationType == TokenClientAuthentication.INVALID) {
-            requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(TokenErrorResponse.Error.INVALID_REQUEST)).build());
+        final TokenClientAuthenticationType authenticationType;
+        try {
+            authenticationType = TokenClientAuthenticationType.getTokenClientAuthenticationType(requestHeaders, form);
+        } catch (TokenAuthenticationException e) {
+            LOG.log(INFO, "Unable to find the authentication type", e);
+            requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(TokenErrorResponse.Error.INVALID_REQUEST, e.getMessage())).build());
             return;
         }
 
-        final TokenPrincipal principal = authenticationType.getPrincipal(requestHeaders, form);
-        if (principal == null) {
-            requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(TokenErrorResponse.Error.INVALID_CLIENT)).build());
+        final TokenPrincipal principal;
+        try {
+            principal = authenticationType.getPrincipal(requestHeaders, form);
+        } catch (TokenAuthenticationException e) {
+            LOG.log(INFO, "Unable to authenticate the client", e);
+            requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(TokenErrorResponse.Error.INVALID_CLIENT, e.getMessage())).build());
             return;
         }
 
