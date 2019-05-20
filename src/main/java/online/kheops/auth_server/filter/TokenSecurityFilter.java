@@ -21,6 +21,8 @@ import java.util.logging.Logger;
 
 import static java.util.logging.Level.INFO;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static online.kheops.auth_server.util.TokenErrorResponse.Error.INVALID_REQUEST;
+import static online.kheops.auth_server.util.TokenErrorResponse.Error.INVALID_CLIENT;
 
 @TokenSecurity
 @Provider
@@ -52,19 +54,19 @@ public class TokenSecurityFilter implements ContainerRequestFilter {
 
         final TokenClientAuthenticationType authenticationType;
         try {
-            authenticationType = TokenClientAuthenticationType.getTokenClientAuthenticationType(requestHeaders, form);
+            authenticationType = TokenClientAuthenticationType.getAuthenticationType(requestHeaders, form);
         } catch (TokenAuthenticationException e) {
             LOG.log(INFO, "Unable to find the authentication type", e);
-            requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(TokenErrorResponse.Error.INVALID_REQUEST, e.getMessage())).build());
+            requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(INVALID_REQUEST, e.getMessage())).build());
             return;
         }
 
         final TokenPrincipal principal;
         try {
-            principal = authenticationType.getPrincipal(servletContext, requestHeaders, form);
+            principal = authenticationType.authenticatePrincipal(servletContext, requestHeaders, form);
         } catch (TokenAuthenticationException e) {
             LOG.log(INFO, "Unable to authenticate the client", e);
-            requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(TokenErrorResponse.Error.INVALID_CLIENT, e.getMessage())).build());
+            requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(INVALID_CLIENT, e.getMessage())).build());
             return;
         }
 

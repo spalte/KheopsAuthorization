@@ -284,4 +284,8 @@ public class ReportProviders {
 
         return reportProvider;
     }
+
+    public static String getConfigUrl(String clientId) throws ClientIdNotFoundException {
+        return getReportProvider(clientId).getUrl();
+    }
 }

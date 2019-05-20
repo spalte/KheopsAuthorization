@@ -8,7 +8,7 @@ import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TokenErrorResponse {
-    public static enum Error {
+    public enum Error {
         INVALID_REQUEST("invalid_request"),
         INVALID_CLIENT("invalid_client"),
         INVALID_GRANT("invalid_grant"),

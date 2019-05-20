@@ -30,6 +30,11 @@
         <param-value>P47dnfP28ptS/uzuuvEACmPYdMiOtFNLXiWTIwNNPgUjrvTgF/JCh3qZi47sIcpeZaUXw132mfmR4q5K/fwepA==</param-value>
     </context-param>
     <context-param>
+        <description>Root url of the Kheops service</description>
+        <param-name>online.kheops.root.uri</param-name>
+        <param-value>http://localhost:8042</param-value>
+    </context-param>
+    <context-param>
         <description>Base URI for the pacs from which study and series metadata can be acquired</description>
         <param-name>online.kheops.pacs.uri</param-name>
         <param-value>http://localhost:8080/dcm4chee-arc/aets/DCM4CHEE/rs</param-value>
