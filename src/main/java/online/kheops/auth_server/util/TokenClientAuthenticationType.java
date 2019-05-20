@@ -1,5 +1,6 @@
 package online.kheops.auth_server.util;
 
+import javax.servlet.ServletContext;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MultivaluedMap;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +14,7 @@ import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 public enum TokenClientAuthenticationType {
 
     CLIENT_SECRET_BASIC("client_secret_basic") {
-        public TokenPrincipal getPrincipal(MultivaluedMap<String, String> headers, Form form)
+        public TokenPrincipal getPrincipal(ServletContext context, MultivaluedMap<String, String> headers, Form form)
                 throws TokenAuthenticationException {
             final String encodedAuthorization = headers.getFirst(AUTHORIZATION).substring(6);
 
@@ -31,18 +32,25 @@ public enum TokenClientAuthenticationType {
             final String clientId = split[0];
             final String clientSecret = split[1];
 
-            return TokenClientAuthenticator.validateClientIDSecret(clientId, clientSecret);
+            return TokenBasicAuthenticator.newAuthenticator(context).clientId(clientId).password(clientSecret).authenticate();
         }
     },
 
     PRIVATE_KEY_JWT("private_key_jwt") {
-        public TokenPrincipal getPrincipal(MultivaluedMap<String, String> headers, Form form)
+        public TokenPrincipal getPrincipal(ServletContext context, MultivaluedMap<String, String> headers, Form form)
                 throws TokenAuthenticationException {
-            return TokenClientAuthenticator.validateJWT(form.asMap().getFirst(CLIENT_ASSERTION));
+
+            final List<String> clientAssertions = form.asMap().get(CLIENT_ASSERTION);
+
+            if (clientAssertions.size() != 1) {
+                throw new TokenAuthenticationException("There isn't a single " + CLIENT_ASSERTION + " header");
+            }
+            return TokenJWTAuthenticator.newBuilder(context).clientJWT(clientAssertions.get(0)).authenticate();
         }
     },
+
     PUBLIC("public") {
-        public TokenPrincipal getPrincipal(MultivaluedMap<String, String> headers, Form form) {
+        public TokenPrincipal getPrincipal(ServletContext context, MultivaluedMap<String, String> headers, Form form) {
             return PUBLIC_PRINCIPAL;
         }
     };
@@ -53,7 +61,17 @@ public enum TokenClientAuthenticationType {
     private static final String CLIENT_ASSERTION = "client_assertion";
     private static final String JWT_BEARER_URN = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 
-    private static final TokenPrincipal PUBLIC_PRINCIPAL = new TokenPrincipal("Public", TokenClientKind.PUBLIC);
+    private static final TokenPrincipal PUBLIC_PRINCIPAL = new TokenPrincipal() {
+        @Override
+        public TokenClientKind getClientKind() {
+            return TokenClientKind.PUBLIC;
+        }
+
+        @Override
+        public String getName() {
+            return "Public";
+        }
+    };
 
     private String schemeString;
 
@@ -108,5 +126,5 @@ public enum TokenClientAuthenticationType {
         return TokenClientAuthenticationType.PUBLIC;
     }
 
-    public abstract TokenPrincipal getPrincipal(MultivaluedMap<String, String> headers, Form form) throws TokenAuthenticationException;
+    public abstract TokenPrincipal getPrincipal(ServletContext context, MultivaluedMap<String, String> headers, Form form) throws TokenAuthenticationException;
 }

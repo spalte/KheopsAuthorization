@@ -8,14 +8,12 @@ import online.kheops.auth_server.util.TokenPrincipal;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.annotation.Priority;
+import javax.servlet.ServletContext;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.*;
 import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.security.Principal;
@@ -29,6 +27,9 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 @Priority(Priorities.AUTHENTICATION)
 public class TokenSecurityFilter implements ContainerRequestFilter {
     private static final Logger LOG = Logger.getLogger(TokenSecurityFilter.class.getName());
+
+    @Context
+    ServletContext servletContext;
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -60,7 +61,7 @@ public class TokenSecurityFilter implements ContainerRequestFilter {
 
         final TokenPrincipal principal;
         try {
-            principal = authenticationType.getPrincipal(requestHeaders, form);
+            principal = authenticationType.getPrincipal(servletContext, requestHeaders, form);
         } catch (TokenAuthenticationException e) {
             LOG.log(INFO, "Unable to authenticate the client", e);
             requestContext.abortWith(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(TokenErrorResponse.Error.INVALID_CLIENT, e.getMessage())).build());

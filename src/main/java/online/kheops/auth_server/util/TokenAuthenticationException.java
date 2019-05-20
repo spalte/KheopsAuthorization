@@ -8,4 +8,9 @@ public class TokenAuthenticationException extends Exception {
     public TokenAuthenticationException(String message) {
         super(message);
     }
+
+    public TokenAuthenticationException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
 }
