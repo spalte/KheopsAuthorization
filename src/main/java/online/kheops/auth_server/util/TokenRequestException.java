@@ -52,4 +52,8 @@ public class TokenRequestException extends BadRequestException {
     public TokenRequestException(Error error, String errorMessage) {
         super(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(error.toString(), errorMessage)).build());
     }
+
+    public TokenRequestException(Error error, String errorMessage, Throwable throwable) {
+        super(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(error.toString(), errorMessage)).build(), throwable);
+    }
 }

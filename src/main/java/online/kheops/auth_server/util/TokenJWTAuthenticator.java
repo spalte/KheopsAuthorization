@@ -8,6 +8,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.RSAKeyProvider;
 import online.kheops.auth_server.report_provider.ClientIdNotFoundException;
+import online.kheops.auth_server.report_provider.ReportProviderUriNotValidException;
 import online.kheops.auth_server.report_provider.ReportProviders;
 
 import javax.servlet.ServletContext;
@@ -23,6 +24,8 @@ import java.net.URISyntaxException;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Objects;
 
@@ -30,7 +33,6 @@ public class TokenJWTAuthenticator {
     private static final String HOST_ROOT_PARAMETER = "online.kheops.root.uri";
     private static final String RS256 = "RS256";
     private static final Client CLIENT = ClientBuilder.newClient();
-    private static final long MAX_EXP_MILLIS = 1000 * 60 * 10; // 10 mins
 
     final private ServletContext context;
     private String clientId;
@@ -94,7 +96,7 @@ public class TokenJWTAuthenticator {
         try {
             JWT.require(Algorithm.RSA256(keyProvider))
                     .acceptLeeway(5)
-                    .withIssuer(getConfigurationHost())
+                    .withIssuer(getConfigurationIssuer())
                     .withSubject(clientId)
                     .withAudience(getAudienceHost())
                     .build().verify(clientJWT);
@@ -131,7 +133,7 @@ public class TokenJWTAuthenticator {
             throw new TokenAuthenticationException("Expiration date (exp) claim is required");
         }
 
-        if (expDate.after(new Date(System.currentTimeMillis() + MAX_EXP_MILLIS))) {
+        if (expDate.after(Date.from(Instant.now().plus(10, ChronoUnit.MINUTES)))) {
             throw new TokenAuthenticationException("Expiration date (exp) claim is too far in the future");
         }
     }
@@ -150,10 +152,16 @@ public class TokenJWTAuthenticator {
         }
     }
 
-    private String getConfigurationHost() throws TokenAuthenticationException {
-        URI configurationURI = getConfigurationURI();
+    private String getConfigurationIssuer() throws TokenAuthenticationException {
+        Objects.requireNonNull(clientId);
 
-        return configurationURI.getScheme() + "://" +  configurationURI.getAuthority();
+        try {
+            return ReportProviders.getConfigIssuer(clientId);
+        } catch (ClientIdNotFoundException e) {
+            throw new TokenAuthenticationException("Unknown clientID", e);
+        } catch (ReportProviderUriNotValidException e) {
+            throw new TokenAuthenticationException("Bad configuration URI", e);
+        }
     }
 
     private String getAudienceHost() {

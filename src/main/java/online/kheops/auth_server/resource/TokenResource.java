@@ -48,9 +48,6 @@ public class TokenResource
 {
     private static final Logger LOG = Logger.getLogger(TokenResource.class.getName());
 
-    private static
-
-
     @Context
     ServletContext context;
 
@@ -96,40 +93,7 @@ public class TokenResource
             throw new TokenRequestException(UNSUPPORTED_GRANT_TYPE, "Missing or duplicate grant_type");
         }
 
-
-        if (grantType == null) {
-            errorResponse.error = "invalid_grant";
-            errorResponse.errorDescription = "Missing grant_type";
-            LOG.warning("Request for a token is missing a grant_type");
-            return Response.status(BAD_REQUEST).entity(errorResponse).build();
-        }
-        if (assertionToken == null) {
-            errorResponse.error = "missing_assertion";
-            errorResponse.errorDescription = "Missing assertion";
-            LOG.warning("Request for a token is missing an assertion");
-            return Response.status(BAD_REQUEST).entity(errorResponse).build();
-        }
-
-        if(scope != null) {
-            if (scope.equals("pep")) {
-                return getPEPToken(grantType, assertionToken, studyInstanceUID, seriesInstanceUID, returnUser);
-
-            } else if (scope.equals("viewer")) {
-                return getViewerToken(grantType, assertionToken, studyInstanceUID, sourceType, sourceId, returnUser);
-
-            } else if (scope.equals("authorization_code")) {
-                return getClientToken(grantType, clientId, clientAssertionType, clientAssertion);
-
-            } else {
-                errorResponse.error = "invalid_scope";
-                errorResponse.errorDescription = "scope: must be 'pep' or 'viewer' not :" + scope;
-                return Response.status(BAD_REQUEST).entity(errorResponse).build();
-            }
-        } else {
-            errorResponse.error = "invalid_scope";
-            errorResponse.errorDescription = "scope: must be 'pep' or 'viewer' not :" + scope;
-            return Response.status(BAD_REQUEST).entity(errorResponse).build();
-        }
+        return grantType.processGrant(securityContext, context, form);
     }
 
     private Response getClientToken(String grantType, String clientId, String clientAssertionType, String clientAssertion) {
@@ -164,23 +128,6 @@ public class TokenResource
             errorResponse.errorDescription = "error";
             return Response.status(BAD_GATEWAY).entity(errorResponse).build();
         }
-
-
-
-        //Générer un JWT Client Token
-        /*
-        sub (client id)
-        scope clientToken
-        aud (client_id)
-        iss (issuer) https://demo.kheops.onlien
-        exp
-        not before
-
-        signé avec la même clé
-         */
-
-        //Retourner le Client Token
-
 
         return null;
     }
@@ -282,121 +229,6 @@ public class TokenResource
 
         return Response.status(OK).entity(tokenResponse).build();
     }
-
-
-    private Response getPEPToken(String grantType, String assertionToken,
-                                 String studyInstanceUID, String seriesInstanceUID,
-                                 boolean returnUser) {
-
-        final ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.error = "invalid_parameters";
-
-        if (studyInstanceUID == null || seriesInstanceUID == null) {
-            errorResponse.errorDescription = "With the scope: 'pep', 'study_instance_uid' and 'series_instance_uid' must be set";
-            return Response.status(BAD_REQUEST).entity(errorResponse).build();
-        }
-        if (!checkValidUID(studyInstanceUID)) {
-            errorResponse.errorDescription = "'study_instance_uid' is not a valid UID";
-            return Response.status(BAD_REQUEST).entity(errorResponse).build();
-        }
-        if (!checkValidUID(seriesInstanceUID)) {
-            errorResponse.errorDescription = "'series_instance_uid' is not a valid UID";
-            return Response.status(BAD_REQUEST).entity(errorResponse).build();
-        }
-
-
-        final String token;
-        final long expiresIn;
-        errorResponse.error = "assertion";
-
-        final Assertion assertion;
-        try {
-            assertion = AssertionVerifier.createAssertion(assertionToken, grantType);
-        } catch (UnknownGrantTypeException e) {
-            errorResponse.errorDescription = e.getMessage();
-            LOG.log(Level.WARNING, "Unknown grant type", e);
-            return Response.status(BAD_REQUEST).entity(errorResponse).build();
-        } catch (BadAssertionException e) {
-            errorResponse.errorDescription = e.getMessage();
-            LOG.log(Level.WARNING, "Error validating a token", e);
-            return Response.status(UNAUTHORIZED).entity(errorResponse).build();
-        } catch (DownloadKeyException e) {
-            LOG.log(Level.SEVERE, "Error downloading the public key", e);
-            errorResponse.error = "server_error";
-            errorResponse.errorDescription = "error";
-            return Response.status(BAD_GATEWAY).entity(errorResponse).build();
-        }
-
-        try {
-            getOrCreateUser(assertion.getSub());
-        } catch (UserNotFoundException e) {
-            LOG.log(Level.WARNING, "User not found", e);
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-
-        if (assertion.getTokenType() == Assertion.TokenType.PEP_TOKEN ) {
-            errorResponse.error = "unauthorized";
-            errorResponse.errorDescription = "Request a pep token is unauthorized with a pep token";
-            return Response.status(UNAUTHORIZED).entity(errorResponse).build();
-        }
-
-        final User callingUser;
-        try {
-            callingUser = getOrCreateUser(assertion.getSub());
-        } catch (UserNotFoundException e) {
-            LOG.log(Level.WARNING, "User not found", e);
-            errorResponse.errorDescription = "Unknown user";
-            return Response.status(UNAUTHORIZED).entity(errorResponse).build();
-        }
-
-        try {
-            final KheopsPrincipalInterface principal = assertion.newPrincipal(callingUser);
-            if (!principal.hasSeriesReadAccess(studyInstanceUID, seriesInstanceUID)) {
-                throw new SeriesNotFoundException("");
-            }
-        } catch (SeriesNotFoundException e) {
-            LOG.info("The user does not have access to the given StudyInstanceUID and SeriesInstanceUID pair");
-            errorResponse.errorDescription = "The user does not have access to the given StudyInstanceUID and SeriesInstanceUID pair";
-            return Response.status(FORBIDDEN).entity(errorResponse).build();
-        }
-        // Generate a pep token
-        final String authSecret = context.getInitParameter("online.kheops.auth.hmacsecret");
-        final Algorithm algorithmHMAC;
-        try {
-            algorithmHMAC = Algorithm.HMAC256(authSecret);
-        } catch (UnsupportedEncodingException e) {
-            LOG.log(Level.SEVERE, "online.kheops.auth.hmacsecret is not a valid HMAC secret", e);
-            return Response.status(INTERNAL_SERVER_ERROR).build();
-        }
-
-        JWTCreator.Builder jwtBuilder = JWT.create()
-                .withIssuer("auth.kheops.online")
-                .withSubject(assertion.getSub())
-                .withAudience("dicom.kheops.online")
-                .withClaim("capability", false) // don't give capability access
-                .withClaim("study_uid", studyInstanceUID)
-                .withClaim("series_uid", seriesInstanceUID)
-                .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-                .withNotBefore(new Date());
-
-        token = jwtBuilder.sign(algorithmHMAC);
-        expiresIn = 3600L;
-
-        TokenResponse tokenResponse = new TokenResponse();
-        tokenResponse.accessToken = token;
-        tokenResponse.tokenType = "Bearer";
-        tokenResponse.expiresIn = expiresIn;
-        if (returnUser) {
-            tokenResponse.user = assertion.getSub();
-        }
-
-        LOG.info(() -> "Returning pep token for user: " + assertion.getSub() + "for studyInstanceUID " + studyInstanceUID +" seriesInstanceUID " + seriesInstanceUID);
-
-        return Response.status(OK).entity(tokenResponse).build();
-    }
-
-
-
 
     @POST
     @FormURLEncodedContentType
