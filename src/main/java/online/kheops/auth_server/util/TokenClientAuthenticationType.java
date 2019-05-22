@@ -102,7 +102,7 @@ public enum TokenClientAuthenticationType {
 
             List<String> authorizationHeaders = headers.get(AUTHORIZATION);
 
-            if (authorizationHeaders.size() != 1) {
+            if (authorizationHeaders == null || authorizationHeaders.size() != 1) {
                 throw new TokenAuthenticationException("Only one Authorization Header can be present");
             }
             try {
@@ -139,7 +139,7 @@ public enum TokenClientAuthenticationType {
     private static void verifySingleHeader(MultivaluedMap<String, String> formParams, String header) throws TokenAuthenticationException {
         final List<String> headers = formParams.get(header);
 
-        if (headers.size() != 1) {
+        if (headers == null || headers.size() != 1) {
             throw new TokenAuthenticationException("There isn't a single " + header + " header");
         }
     }

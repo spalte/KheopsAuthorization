@@ -55,8 +55,7 @@ public class PepTokenGenerator {
       return new PepTokenGenerator(context);
     }
 
-    public String generate() {
-        final long expiresIn;
+    public String generate(long expiresIn) {
 
         final Assertion assertion;
         try {
@@ -104,7 +103,7 @@ public class PepTokenGenerator {
                 .withClaim("capability", false) // don't give capability access
                 .withClaim("study_uid", studyInstanceUID)
                 .withClaim("series_uid", seriesInstanceUID)
-                .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+                .withExpiresAt(Date.from(Instant.now().plus(expiresIn, ChronoUnit.SECONDS)))
                 .withNotBefore(new Date());
 
         LOG.info(() -> "Returning pep token for user: " + assertion.getSub() + "for studyInstanceUID " + studyInstanceUID +" seriesInstanceUID " + seriesInstanceUID);

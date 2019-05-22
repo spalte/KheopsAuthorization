@@ -4,10 +4,12 @@ import javax.servlet.ServletContext;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import java.security.Principal;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import java.util.List;
+
+import static online.kheops.auth_server.util.Consts.ALBUM;
 import static online.kheops.auth_server.util.TokenRequestException.Error.*;
+import static online.kheops.auth_server.util.Tools.checkValidUID;
 
 public enum TokenGrantType {
     REFRESH_TOKEN("refresh_token") {
@@ -83,20 +85,51 @@ public enum TokenGrantType {
             final String subjectTokenType = form.getFirst("subject_token_type");
             final String studyInstanceUID = form.getFirst("study_instance_uid");
             final String seriesInstanceUID = form.getFirst("series_instance_uid");
+            if (!checkValidUID(studyInstanceUID)) {
+                throw new TokenRequestException(INVALID_REQUEST, "Bad study instance UID");
+            }
+            if (!checkValidUID(seriesInstanceUID)) {
+                throw new TokenRequestException(INVALID_REQUEST, "Bad series instance UID");
+            }
 
             if (!subjectTokenType.equals("urn:ietf:params:oauth:token-type:access_token")) {
-                throw new TokenRequestException(INVALID_REQUEST);
+                throw new TokenRequestException(INVALID_REQUEST, "Unknown subject token type");
             }
 
             if (scope.equals("pep")) {
+                if (!securityContext.isUserInRole(TokenClientKind.INTERNAL.getRoleString())) {
+                    throw new TokenRequestException(UNAUTHORIZED_CLIENT);
+                }
+
                 String pepToken = PepTokenGenerator.createGenerator(servletContext)
                         .withToken(subjectToken)
                         .withStudyInstanceUID(studyInstanceUID)
                         .withSeriesInstanceUID(seriesInstanceUID)
-                        .generate();
-                return Response.ok(TokenResponseEntity.createEntity(pepToken, 3600L)).build();
+                        .generate(PEP_TOKEN_LIFETIME);
+                return Response.ok(TokenResponseEntity.createEntity(pepToken, PEP_TOKEN_LIFETIME)).build();
             } else if (scope.equals("viewer")) {
-                return getViewerToken(grantType, assertionToken, studyInstanceUID, sourceType, sourceId, returnUser);
+                verifySingle(form, "source_type");
+                final String sourceType = form.getFirst("source_type");
+
+                final String sourceId;
+                if (sourceType.equals(ALBUM)) {
+                    verifySingle(form, "source_id");
+                    sourceId = form.getFirst("source_id");
+                } else {
+                    if (form.get("source_id") == null) {
+                        throw new TokenRequestException(INVALID_REQUEST, "source_id should not be specified for non-album sources");
+                    }
+                    sourceId = null;
+                }
+
+                String viewerToken = ViewerTokenGenerator.createGenerator()
+                        .withToken(subjectToken)
+                        .withStudyInstanceUID(studyInstanceUID)
+                        .withSeriesInstanceUID(seriesInstanceUID)
+                        .withSourceType(sourceType)
+                        .withSourceId(sourceId)
+                        .generate(VIEWER_TOKEN_LIFETIME);
+                return Response.ok(TokenResponseEntity.createEntity(viewerToken, VIEWER_TOKEN_LIFETIME)).build();
             } else {
                 throw new TokenRequestException(INVALID_SCOPE);
             }
@@ -104,6 +137,8 @@ public enum TokenGrantType {
     };
 
     final private static long REPORT_PROVIDER_TOKEN_LIFETIME = 60 * 60 * 5; // 5 hours
+    final private static long PEP_TOKEN_LIFETIME = 60 * 60; // 1 hours
+    final private static long VIEWER_TOKEN_LIFETIME = 60 * 60 * 5; // 5 hours
 
     private final String grantType;
 
@@ -128,7 +163,8 @@ public enum TokenGrantType {
     public abstract Response processGrant(SecurityContext securityContext, ServletContext servletContext, MultivaluedMap<String, String> form);
 
     private static void verifySingle(final MultivaluedMap<String, String> form, final String param) throws TokenRequestException {
-        if (form.get(param).size() != 1) {
+        final List<String> params = form.get(param);
+        if (params == null || form.get(param).size() != 1) {
             throw new TokenRequestException(INVALID_REQUEST, "Must have a single " + param);
         }
     }
