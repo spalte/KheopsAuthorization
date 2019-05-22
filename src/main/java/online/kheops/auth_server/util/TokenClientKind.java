@@ -3,8 +3,7 @@ package online.kheops.auth_server.util;
 public enum TokenClientKind {
     REPORT_PROVIDER("report_provider_client"),
     INTERNAL("internal_client"),
-    PUBLIC("public_client"),
-    INVALID("invalid");
+    PUBLIC("public_client");
 
     private String roleString;
 
@@ -13,9 +12,6 @@ public enum TokenClientKind {
     }
 
     public String getRoleString() {
-        if (this == INVALID) {
-            throw new IllegalStateException("INVALID ClientKind  does not have a role");
-        }
         return roleString;
     }
 }

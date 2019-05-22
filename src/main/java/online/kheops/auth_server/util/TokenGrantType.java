@@ -19,11 +19,11 @@ public enum TokenGrantType {
     },
     AUTHORIZATION_CODE("authorization_code") {
         public Response processGrant(SecurityContext securityContext, ServletContext servletContext, MultivaluedMap<String, String> form) {
-            verifySingle(form, "code");
-            verifySingle(form, "client_id");
+            verifySingleHeader(form, "code");
+            verifySingleHeader(form, "client_id");
 
-            final String clientId = form.getFirst("client_id");
             final String code = form.getFirst("code");
+            final String clientId = form.getFirst("client_id");
 
             if (!securityContext.isUserInRole(TokenClientKind.REPORT_PROVIDER.getRoleString())) {
                 throw new TokenRequestException(UNAUTHORIZED_CLIENT);
@@ -72,13 +72,13 @@ public enum TokenGrantType {
             throw new TokenRequestException(UNSUPPORTED_GRANT_TYPE);
         }
     },
-    EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange") {
+    TOKEN_EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange") {
         public Response processGrant(SecurityContext securityContext, ServletContext servletContext, MultivaluedMap<String, String> form) {
-            verifySingle(form, "scope");
-            verifySingle(form, "subject_token");
-            verifySingle(form, "subject_token_type");
-            verifySingle(form, "study_instance_uid");
-            verifySingle(form, "series_instance_uid");
+            verifySingleHeader(form, "scope");
+            verifySingleHeader(form, "subject_token");
+            verifySingleHeader(form, "subject_token_type");
+            verifySingleHeader(form, "study_instance_uid");
+            verifySingleHeader(form, "series_instance_uid");
 
             final String scope = form.getFirst("scope");
             final String subjectToken = form.getFirst("subject_token");
@@ -108,12 +108,12 @@ public enum TokenGrantType {
                         .generate(PEP_TOKEN_LIFETIME);
                 return Response.ok(TokenResponseEntity.createEntity(pepToken, PEP_TOKEN_LIFETIME)).build();
             } else if (scope.equals("viewer")) {
-                verifySingle(form, "source_type");
+                verifySingleHeader(form, "source_type");
                 final String sourceType = form.getFirst("source_type");
 
                 final String sourceId;
                 if (sourceType.equals(ALBUM)) {
-                    verifySingle(form, "source_id");
+                    verifySingleHeader(form, "source_id");
                     sourceId = form.getFirst("source_id");
                 } else {
                     if (form.get("source_id") == null) {
@@ -162,7 +162,7 @@ public enum TokenGrantType {
 
     public abstract Response processGrant(SecurityContext securityContext, ServletContext servletContext, MultivaluedMap<String, String> form);
 
-    private static void verifySingle(final MultivaluedMap<String, String> form, final String param) throws TokenRequestException {
+    private static void verifySingleHeader(final MultivaluedMap<String, String> form, final String param) throws TokenRequestException {
         final List<String> params = form.get(param);
         if (params == null || form.get(param).size() != 1) {
             throw new TokenRequestException(INVALID_REQUEST, "Must have a single " + param);
