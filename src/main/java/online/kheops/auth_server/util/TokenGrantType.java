@@ -77,14 +77,14 @@ public enum TokenGrantType {
             verifySingleHeader(form, "scope");
             verifySingleHeader(form, "subject_token");
             verifySingleHeader(form, "subject_token_type");
-            verifySingleHeader(form, "study_instance_uid");
-            verifySingleHeader(form, "series_instance_uid");
+            verifySingleHeader(form, "studyUID");
+            verifySingleHeader(form, "seriesUID");
 
             final String scope = form.getFirst("scope");
             final String subjectToken = form.getFirst("subject_token");
             final String subjectTokenType = form.getFirst("subject_token_type");
-            final String studyInstanceUID = form.getFirst("study_instance_uid");
-            final String seriesInstanceUID = form.getFirst("series_instance_uid");
+            final String studyInstanceUID = form.getFirst("studyUID");
+            final String seriesInstanceUID = form.getFirst("seriesUID");
             if (!checkValidUID(studyInstanceUID)) {
                 throw new TokenRequestException(INVALID_REQUEST, "Bad study instance UID");
             }
