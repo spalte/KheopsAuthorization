@@ -85,6 +85,9 @@ public class TokenResource
 
         final IntrospectResponse introspectResponse = new IntrospectResponse();
 
+        if (!securityContext.isUserInRole(TokenClientKind.PUBLIC.getRoleString())) {
+            throw new NotAuthorizedException("Basic");
+        }
         // TODO secure this resource
 
         final Assertion assertion;
