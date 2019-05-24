@@ -8,11 +8,13 @@ import java.util.Objects;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TokenResponseEntity {
     @XmlElement(name = "access_token")
-    final String accessToken;
+    String accessToken;
     @XmlElement(name = "token_type")
     final String tokenType = "Bearer";
     @XmlElement(name = "expires_in")
-    final Long expiresIn;
+    Long expiresIn;
+
+    public TokenResponseEntity() {}
 
     private TokenResponseEntity(final String accessToken, final long expiresIn) {
         this.accessToken = Objects.requireNonNull(accessToken);

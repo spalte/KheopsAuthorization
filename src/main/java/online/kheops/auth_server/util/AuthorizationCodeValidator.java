@@ -35,7 +35,9 @@ public class AuthorizationCodeValidator {
         try {
             jwt = JWT.require(Algorithm.HMAC256(getHMAC256Secret()))
                     .withIssuer(getIssuerHost())
-                    .withClaim("client_id", Objects.requireNonNull(clientId))
+                    .withAudience(getIssuerHost())
+                    .withClaim("azp", Objects.requireNonNull(clientId))
+                    .withClaim("type", "report_provider_code")
                     .build()
                     .verify(authorizationCode);
         } catch (JWTVerificationException | UnsupportedEncodingException e) {
