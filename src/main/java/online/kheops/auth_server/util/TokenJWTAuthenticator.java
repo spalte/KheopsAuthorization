@@ -160,7 +160,7 @@ public class TokenJWTAuthenticator {
         Objects.requireNonNull(clientId);
 
         try {
-            return ReportProviders.getConfigIssuer(clientId);
+            return ReportProviders.getConfigIssuer(ReportProviders.getReportProvider(clientId));
         } catch (ClientIdNotFoundException e) {
             throw new TokenAuthenticationException("Unknown clientID", e);
         } catch (ReportProviderUriNotValidException e) {
@@ -177,7 +177,7 @@ public class TokenJWTAuthenticator {
 
         final URI configurationUri;
         try {
-            configurationUri = new URI(ReportProviders.getConfigUrl(clientId));
+            configurationUri = new URI((ReportProviders.getReportProvider(clientId).getUrl()));
         } catch (ClientIdNotFoundException e) {
             throw new TokenAuthenticationException("Unknown clientID", e);
         } catch (URISyntaxException e) {

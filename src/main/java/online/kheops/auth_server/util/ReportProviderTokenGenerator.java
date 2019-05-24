@@ -87,13 +87,11 @@ public class ReportProviderTokenGenerator {
         Objects.requireNonNull(clientId);
 
         try {
-            return ReportProviders.getConfigIssuer(clientId);
+            return ReportProviders.getConfigIssuer(ReportProviders.getReportProvider(clientId));
         } catch (ClientIdNotFoundException e) {
             throw new TokenAuthenticationException("Unknown client id", e);
         } catch (ReportProviderUriNotValidException e) {
             throw new TokenAuthenticationException("Bad ", e);
         }
     }
-
-
 }

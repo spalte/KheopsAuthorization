@@ -300,23 +300,4 @@ public class ReportProviders {
 
         return reportProvider;
     }
-
-    public static String getConfigUrl(String clientId) throws ClientIdNotFoundException {
-        return getReportProvider(clientId).getUrl();
-    }
-
-    public static String getConfigIssuer(String clientId) throws ClientIdNotFoundException, ReportProviderUriNotValidException {
-        final URI configurationUri;
-        try {
-            configurationUri = new URI(ReportProviders.getConfigUrl(clientId));
-        } catch (URISyntaxException e) {
-            throw new ReportProviderUriNotValidException("Bad configuration URI", e);
-        }
-
-//        if (!configurationUri.getScheme().equals("https") && !configurationUri.getHost().equals("localhost")) {
-//            throw new ReportProviderUriNotValidException("Non https configuration URIs are only allowed for localhost");
-//        }
-
-        return configurationUri.getScheme() + "://" + configurationUri.getAuthority();
-    }
 }
