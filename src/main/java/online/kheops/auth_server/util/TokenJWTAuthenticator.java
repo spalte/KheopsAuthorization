@@ -128,6 +128,10 @@ public class TokenJWTAuthenticator {
             throw new TokenAuthenticationException("Token id (jti) claim is required");
         }
 
+        if (decodedJWT.getKeyId() == null) {
+            throw new TokenAuthenticationException("Token id (kid) header is required");
+        }
+
         Date expDate = decodedJWT.getExpiresAt();
         if (expDate == null) {
             throw new TokenAuthenticationException("Expiration date (exp) claim is required");
@@ -180,9 +184,9 @@ public class TokenJWTAuthenticator {
             throw new TokenAuthenticationException("Bad configuration URI", e);
         }
 
-        if (!configurationUri.getScheme().equals("https") && !configurationUri.getHost().equals("localhost")) {
-            throw new TokenAuthenticationException("Non https configuration URIs are only allowed for localhost");
-        }
+//        if (!configurationUri.getScheme().equals("https") && !configurationUri.getHost().equals("localhost")) {
+//            throw new TokenAuthenticationException("Non https configuration URIs are only allowed for localhost");
+//        }
 
         return configurationUri;
     }
@@ -202,9 +206,9 @@ public class TokenJWTAuthenticator {
             throw new TokenAuthenticationException("jwks_uri is not a valid URI", e);
         }
 
-        if (!jwksUri.getScheme().equals("https") && !jwksUri.getHost().equals("localhost")) {
-            throw new TokenAuthenticationException("Non https jwks URIs are only allowed for localhost");
-        }
+//        if (!jwksUri.getScheme().equals("https") && !jwksUri.getHost().equals("localhost")) {
+//            throw new TokenAuthenticationException("Non https jwks URIs are only allowed for localhost");
+//        }
 
         return jwksUri;
     }

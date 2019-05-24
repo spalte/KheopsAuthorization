@@ -48,6 +48,9 @@ public class TokenErrorResponse {
         return errorDescription;
     };
 
+    public TokenErrorResponse() {
+    }
+
     public TokenErrorResponse(Error error) {
         this.error = Objects.requireNonNull(error);
     }

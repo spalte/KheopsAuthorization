@@ -13,9 +13,11 @@ import javax.servlet.ServletContext;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.xml.bind.annotation.XmlElement;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.util.logging.Level.WARNING;
 import static javax.ws.rs.core.Response.Status.*;
 import static online.kheops.auth_server.util.TokenRequestException.Error.UNSUPPORTED_GRANT_TYPE;
 import static online.kheops.auth_server.util.TokenRequestException.Error.INVALID_REQUEST;
@@ -59,9 +61,11 @@ public class TokenResource
     @Path("/token")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response token(final MultivaluedMap<String, String> form) {
+    public Response token(MultivaluedMap<String, String> form) {
+        final List<String> grantTypes = form.get("grant_type");
 
-        if (form.get("grant_type").size() != 0) {
+        if (grantTypes == null || form.get("grant_type").size() != 1) {
+            LOG.log(WARNING, "Missing or duplicate grant_type");
             throw new TokenRequestException(INVALID_REQUEST, "Missing or duplicate grant_type");
         }
 
@@ -72,7 +76,12 @@ public class TokenResource
             throw new TokenRequestException(UNSUPPORTED_GRANT_TYPE, "Missing or duplicate grant_type");
         }
 
-        return grantType.processGrant(securityContext, context, form);
+        try {
+            return grantType.processGrant(securityContext, context, form);
+        } catch (WebApplicationException e) {
+            LOG.log(WARNING, "error processing grant", e);
+            throw e;
+        }
     }
 
     @POST
@@ -94,7 +103,7 @@ public class TokenResource
         try {
             assertion = AssertionVerifier.createAssertion(assertionToken);
         } catch (BadAssertionException e) {
-            LOG.log(Level.WARNING, "Error validating a token", e);
+            LOG.log(WARNING, "Error validating a token", e);
             return Response.status(OK).entity(errorIntrospectResponse).build();
         } catch (DownloadKeyException e) {
             LOG.log(Level.SEVERE, "Error downloading the public key", e);

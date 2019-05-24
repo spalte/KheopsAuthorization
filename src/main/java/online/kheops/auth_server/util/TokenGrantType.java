@@ -35,7 +35,7 @@ public enum TokenGrantType {
                         .withClientId(clientId)
                         .validate(code);
             } catch (TokenAuthenticationException e) {
-                throw new TokenRequestException(UNAUTHORIZED_CLIENT);
+                throw new TokenRequestException(UNAUTHORIZED_CLIENT, e);
             }
 
             final String token;

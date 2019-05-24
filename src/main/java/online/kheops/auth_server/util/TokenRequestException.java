@@ -38,6 +38,8 @@ public class TokenRequestException extends BadRequestException {
         @XmlElement(name = "error_description")
         private String errorDescription;
 
+        public TokenErrorResponse() {}
+
         private TokenErrorResponse(String error, String errorDescription) {
             this.error = error;
             this.errorDescription = errorDescription;
@@ -47,6 +49,10 @@ public class TokenRequestException extends BadRequestException {
 
     public TokenRequestException(Error error) {
         super(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(error.toString(), null)).build());
+    }
+
+    public TokenRequestException(Error error, Throwable throwable) {
+        super(Response.status(BAD_REQUEST).entity(new TokenErrorResponse(error.toString(), null)).build(), throwable);
     }
 
     public TokenRequestException(Error error, String errorMessage) {
