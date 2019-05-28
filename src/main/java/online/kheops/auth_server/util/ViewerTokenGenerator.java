@@ -27,7 +27,6 @@ public class ViewerTokenGenerator {
 
     private String token;
     private String studyInstanceUID;
-    private String seriesInstanceUID;
     private String sourceType;
     private String sourceId;
 
@@ -38,11 +37,6 @@ public class ViewerTokenGenerator {
 
     public ViewerTokenGenerator withStudyInstanceUID(final String studyInstanceUID) {
         this.studyInstanceUID = Objects.requireNonNull(studyInstanceUID);
-        return this;
-    }
-
-    public ViewerTokenGenerator withSeriesInstanceUID(final String seriesInstanceUID) {
-        this.seriesInstanceUID = Objects.requireNonNull(seriesInstanceUID);
         return this;
     }
 
@@ -64,7 +58,6 @@ public class ViewerTokenGenerator {
     public String generate(final long expiresIn) {
         Objects.requireNonNull(token);
         Objects.requireNonNull(studyInstanceUID);
-        Objects.requireNonNull(seriesInstanceUID);
         Objects.requireNonNull(sourceType);
 
         if (!sourceType.equals(ALBUM) && !sourceType.equals(INBOX)) {

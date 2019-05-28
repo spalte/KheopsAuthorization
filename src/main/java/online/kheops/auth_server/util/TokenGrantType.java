@@ -78,18 +78,13 @@ public enum TokenGrantType {
             verifySingleHeader(form, "subject_token");
             verifySingleHeader(form, "subject_token_type");
             verifySingleHeader(form, "studyUID");
-            verifySingleHeader(form, "seriesUID");
 
             final String scope = form.getFirst("scope");
             final String subjectToken = form.getFirst("subject_token");
             final String subjectTokenType = form.getFirst("subject_token_type");
             final String studyInstanceUID = form.getFirst("studyUID");
-            final String seriesInstanceUID = form.getFirst("seriesUID");
             if (!checkValidUID(studyInstanceUID)) {
                 throw new TokenRequestException(INVALID_REQUEST, "Bad study instance UID");
-            }
-            if (!checkValidUID(seriesInstanceUID)) {
-                throw new TokenRequestException(INVALID_REQUEST, "Bad series instance UID");
             }
 
             if (!subjectTokenType.equals("urn:ietf:params:oauth:token-type:access_token")) {
@@ -97,6 +92,12 @@ public enum TokenGrantType {
             }
 
             if (scope.equals("pep")) {
+                verifySingleHeader(form, "seriesUID");
+                final String seriesInstanceUID = form.getFirst("seriesUID");
+                if (!checkValidUID(seriesInstanceUID)) {
+                    throw new TokenRequestException(INVALID_REQUEST, "Bad series instance UID");
+                }
+
                 if (!securityContext.isUserInRole(TokenClientKind.INTERNAL.getRoleString())) {
                     throw new TokenRequestException(UNAUTHORIZED_CLIENT);
                 }
@@ -125,7 +126,6 @@ public enum TokenGrantType {
                 String viewerToken = ViewerTokenGenerator.createGenerator()
                         .withToken(subjectToken)
                         .withStudyInstanceUID(studyInstanceUID)
-                        .withSeriesInstanceUID(seriesInstanceUID)
                         .withSourceType(sourceType)
                         .withSourceId(sourceId)
                         .generate(VIEWER_TOKEN_LIFETIME);
