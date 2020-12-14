@@ -12,6 +12,7 @@ import online.kheops.auth_server.entity.ReportProvider;
 import online.kheops.auth_server.entity.User;
 import online.kheops.auth_server.report_provider.*;
 import online.kheops.auth_server.principal.KheopsPrincipal;
+import online.kheops.auth_server.report_provider.metadata.ParameterMap;
 import online.kheops.auth_server.token.*;
 import online.kheops.auth_server.user.UserNotFoundException;
 import online.kheops.auth_server.util.ErrorResponse;
@@ -95,24 +96,16 @@ public class ReportProviderResource {
   @AlbumAccessSecured
   @AlbumPermissionSecured(permission = MANAGE_DICOM_SR, context = PATH_PARAM)
   @Path("albums/{" + ALBUM + ":" + AlbumId.ID_PATTERN + "}/reportproviders")
-  @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+  @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response newReportProvider(
-      @SuppressWarnings("RSReferenceInspection") @PathParam(ALBUM) String albumId,
-      @FormParam("url") @NotNull @NotEmpty final String url,
-      @FormParam("name") @NotNull @NotEmpty final String name)
+      @PathParam(ALBUM) String albumId,
+      ParameterMap configuration)
       throws AlbumNotFoundException {
 
-    if (!isValidConfigUrl(url)) {
-      final ErrorResponse errorResponse =
-          new ErrorResponse.ErrorResponseBuilder()
-              .message(BAD_FORM_PARAMETER)
-              .detail("'url' formparam is not valid")
-              .build();
-      return Response.status(BAD_REQUEST).entity(errorResponse).build();
-    }
-
     final KheopsPrincipal kheopsPrincipal = ((KheopsPrincipal) securityContext.getUserPrincipal());
+
+
 
     final ReportProviderResponse dicomSrResponse;
     dicomSrResponse =

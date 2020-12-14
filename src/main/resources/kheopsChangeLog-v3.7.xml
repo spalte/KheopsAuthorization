@@ -4,12 +4,21 @@
     <changeSet author="kheops" id="v3.7-1">
         <preConditions onFail="MARK_RAN">
             <not>
-                <tableExists tableName="report_provider_metadata" schemaName="public"/>
+                <tableExists tableName="oidc_report_providers" schemaName="public"/>
             </not>
         </preConditions>
-        <createTable tableName="report_provider_metadata">
+        <createTable tableName="oidc_report_providers">
             <column autoIncrement="true" name="pk" type="BIGINT">
-                <constraints primaryKey="true" primaryKeyName="report_provider_metadata_pk"/>
+                <constraints primaryKey="true" primaryKeyName="oidc_report_providers_pk"/>
+            </column>
+            <column name="creation_time" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(1024)">
+                <constraints nullable="false"/>
             </column>
             <column name="album_fk" type="BIGINT">
                 <constraints nullable="false"/>
@@ -20,12 +29,46 @@
     <changeSet author="kheops" id="v3.7-2">
         <preConditions onFail="MARK_RAN">
             <not>
-                <foreignKeyConstraintExists foreignKeyName="event_series_event_fk_fkey" schemaName="public"/>
+                <foreignKeyConstraintExists foreignKeyName="oidc_report_providers_album_fk_fkey" schemaName="public"/>
             </not>
         </preConditions>
-        <addForeignKeyConstraint baseColumnNames="album_fk" baseTableName="albums" constraintName="albums_album_fk_fkey" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="albums" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="album_fk" baseTableName="oidc_report_providers" constraintName="oidc_report_providers_album_fk_fkey" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="albums" validate="true"/>
     </changeSet>
 
+
+    <changeSet author="kheops" id="v3.7-3">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="report_provider_parameters" schemaName="public"/>
+            </not>
+        </preConditions>
+        <createTable tableName="report_provider_parameters">
+            <column autoIncrement="true" name="pk" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="report_provider_parameters_pk"/>
+            </column>
+            <column name="creation_time" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(2048)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="report_provider_fk" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="kheops" id="v3.7-4">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="report_provider_parameters_report_provider_fk_fkey" schemaName="public"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseColumnNames="report_provider_fk" baseTableName="report_provider_parameters" constraintName="report_provider_parameters_report_provider_fk_fkey" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="oidc_report_providers" validate="true"/>
+    </changeSet>
 
 </databaseChangeLog>
 

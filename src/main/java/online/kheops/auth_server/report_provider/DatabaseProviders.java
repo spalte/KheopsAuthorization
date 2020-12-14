@@ -3,6 +3,18 @@ package online.kheops.auth_server.report_provider;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import online.kheops.auth_server.report_provider.metadata.OidcMetadata;
 
+public interface DatabaseProviders {
+
+  OidcReportProviderProvider
+
+}
+
+
+package online.kheops.auth_server.report_provider;
+
+    import com.auth0.jwt.interfaces.DecodedJWT;
+    import online.kheops.auth_server.report_provider.metadata.OidcMetadata;
+
 public interface OidcProvider {
 
   OidcMetadata getOidcMetadata() throws OidcProviderException;
