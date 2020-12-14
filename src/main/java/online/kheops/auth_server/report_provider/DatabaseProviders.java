@@ -5,7 +5,7 @@ import online.kheops.auth_server.report_provider.metadata.OidcMetadata;
 
 public interface DatabaseProviders {
 
-  OidcReportProviderProvider
+  OidcReportProviderRepository
 
 }
 

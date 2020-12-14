@@ -8,8 +8,10 @@ import online.kheops.auth_server.album.AlbumNotFoundException;
 import online.kheops.auth_server.annotation.*;
 import online.kheops.auth_server.accesstoken.*;
 import online.kheops.auth_server.entity.Album;
+import online.kheops.auth_server.entity.Mutation;
 import online.kheops.auth_server.entity.ReportProvider;
 import online.kheops.auth_server.entity.User;
+import online.kheops.auth_server.event.MutationType;
 import online.kheops.auth_server.report_provider.*;
 import online.kheops.auth_server.principal.KheopsPrincipal;
 import online.kheops.auth_server.report_provider.metadata.ParameterMap;
@@ -22,6 +24,7 @@ import online.kheops.auth_server.util.KheopsLogBuilder;
 import online.kheops.auth_server.util.Source;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 import javax.servlet.ServletContext;
 import javax.validation.constraints.Min;
@@ -45,6 +48,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.logging.Level.INFO;
 import static javax.ws.rs.core.Response.Status.*;
 import static online.kheops.auth_server.accesstoken.AccessToken.TokenType.KEYCLOAK_TOKEN;
+import static online.kheops.auth_server.album.Albums.getAlbum;
+import static online.kheops.auth_server.event.Events.reportProviderMutation;
 import static online.kheops.auth_server.filter.AlbumPermissionSecuredContext.PATH_PARAM;
 import static online.kheops.auth_server.report_provider.metadata.parameters.ListUriParameter.REDIRECT_URIS;
 import static online.kheops.auth_server.report_provider.ReportProviderQueries.getReportProviderWithClientId;
@@ -104,6 +109,45 @@ public class ReportProviderResource {
       throws AlbumNotFoundException {
 
     final KheopsPrincipal kheopsPrincipal = ((KheopsPrincipal) securityContext.getUserPrincipal());
+
+    final EntityManager em = EntityManagerListener.createEntityManager();
+    final EntityTransaction tx = em.getTransaction();
+    final ReportProvider reportProvider;
+
+    try {
+      tx.begin();
+
+      OidcReportProviderRepository reportProviderRepository;
+
+      reportProviderRepository.insert(configuration);
+
+      final Album album = getAlbum(albumId, em);
+      reportProvider = new ReportProvider(url, name, album, new ClientId().getClientId());
+
+      callingUser = em.merge(callingUser);
+      em.persist(reportProvider);
+
+      final Mutation mutation = reportProviderMutation(callingUser, album, reportProvider, MutationType.CREATE_REPORT_PROVIDER);
+      em.persist(mutation);
+
+      album.updateLastEventTime();
+      album.updateLastEventTime();
+      tx.commit();
+
+    } finally {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+      em.close();
+    }
+
+    kheopsLogBuilder.album(albumId)
+        .action(ActionType.NEW_REPORT_PROVIDER)
+        .clientID(reportProvider.getClientId())
+        .log();
+    return new ReportProviderResponse(reportProvider, ReportProviderResponse.Type.FULL);
+
+
 
 
 
